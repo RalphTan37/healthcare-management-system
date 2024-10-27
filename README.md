@@ -11,3 +11,10 @@ Enhance the quality of care and improve patient satification for healthcare prov
 Integrate a Website with a Database </br>
 
 Languages/Tools: HTML, CSS, JavaScript/React, and SQL
+
+## Launch HTML File:
+
+In the terminal, enter:
+```
+./home.html
+```
