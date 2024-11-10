@@ -1,0 +1,30 @@
+:root {
+    --primary-color: #3A9DB1;
+    --secondary-color: #2C7A8B;
+    --accent-color: #FF6B6B;
+    --text-color: #333;
+    --light-gray: #f4f4f4;
+    --white: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
