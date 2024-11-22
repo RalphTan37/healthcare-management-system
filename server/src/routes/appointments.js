@@ -217,4 +217,212 @@ router.get('/patient/:patientId', async (req, res) => {
     }
 });
 
+// Update Appointment
+router.put('/:id', async (req, res) => {
+    const { doctorId, appointmentDate, appointmentTime, reason, status } = req.body;
+    try {
+        // Check if new time slot is available
+        if (appointmentDate && appointmentTime) {
+            const [conflicts] = await pool.query(
+                'SELECT * FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND appointment_id != ? AND status != "cancelled"',
+                [doctorId, appointmentDate, appointmentTime, req.params.id]
+            );
+            
+            if (conflicts.length > 0) {
+                return res.status(400).json({ message: 'Selected time slot is not available' });
+            }
+        }
+
+        await pool.query(
+            'UPDATE appointments SET doctor_id = ?, appointment_date = ?, appointment_time = ?, reason = ?, status = ? WHERE appointment_id = ?',
+            [doctorId, appointmentDate, appointmentTime, reason, status, req.params.id]
+        );
+
+        const [updatedAppointment] = await pool.query(
+            `SELECT a.*, 
+                    CONCAT(d.first_name, ' ', d.last_name) as doctor_name,
+                    CONCAT(p.first_name, ' ', p.last_name) as patient_name 
+             FROM appointments a 
+             JOIN doctors d ON a.doctor_id = d.doctor_id 
+             JOIN patients p ON a.patient_id = p.patient_id 
+             WHERE a.appointment_id = ?`,
+            [req.params.id]
+        );
+
+        res.json(updatedAppointment[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update appointment route
+router.put('/:id', async (req, res) => {
+    const { patientId, doctorId, appointmentDate, appointmentTime, reason } = req.body;
+    try {
+        // Log the incoming data for debugging
+        console.log('Updating appointment with data:', {
+            patientId, doctorId, appointmentDate, appointmentTime, reason,
+            appointmentId: req.params.id
+        });
+
+        // First check if appointment exists
+        const [existingAppointment] = await pool.query(
+            'SELECT * FROM appointments WHERE appointment_id = ?',
+            [req.params.id]
+        );
+
+        if (existingAppointment.length === 0) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        }
+
+        // Check for time slot conflicts
+        const [conflicts] = await pool.query(
+            `SELECT * FROM appointments 
+             WHERE doctor_id = ? 
+             AND appointment_date = ? 
+             AND appointment_time = ? 
+             AND appointment_id != ?
+             AND status != 'cancelled'`,
+            [doctorId, appointmentDate, appointmentTime, req.params.id]
+        );
+
+        if (conflicts.length > 0) {
+            return res.status(400).json({ message: 'This time slot is already booked' });
+        }
+
+        // Update the appointment
+        await pool.query(
+            `UPDATE appointments 
+             SET patient_id = ?,
+                 doctor_id = ?, 
+                 appointment_date = ?, 
+                 appointment_time = ?, 
+                 reason = ?,
+                 status = 'scheduled'
+             WHERE appointment_id = ?`,
+            [patientId, doctorId, appointmentDate, appointmentTime, reason, req.params.id]
+        );
+
+        // Fetch the updated appointment
+        const [updatedAppointment] = await pool.query(
+            `SELECT a.*,
+                    CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                    CONCAT(d.first_name, ' ', d.last_name) as doctor_name
+             FROM appointments a
+             JOIN patients p ON a.patient_id = p.patient_id
+             JOIN doctors d ON a.doctor_id = d.doctor_id
+             WHERE a.appointment_id = ?`,
+            [req.params.id]
+        );
+
+        if (updatedAppointment.length === 0) {
+            throw new Error('Failed to fetch updated appointment');
+        }
+
+        console.log('Successfully updated appointment:', updatedAppointment[0]);
+        res.json(updatedAppointment[0]);
+    } catch (err) {
+        console.error('Error updating appointment:', err);
+        res.status(500).json({ 
+            message: 'Error updating appointment',
+            error: err.message 
+        });
+    }
+});
+
+// Cancel/Delete Appointment
+router.delete('/:id', async (req, res) => {
+    try {
+        // Soft delete by updating status to cancelled
+        await pool.query(
+            'UPDATE appointments SET status = "cancelled" WHERE appointment_id = ?',
+            [req.params.id]
+        );
+        res.json({ message: 'Appointment cancelled successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get available slots
+router.get('/available-slots', async (req, res) => {
+    try {
+        const { doctorId, date } = req.query;
+        
+        // Validate inputs
+        if (!doctorId || !date) {
+            return res.status(400).json({ message: 'Doctor ID and date are required' });
+        }
+
+        console.log('Fetching slots for:', { doctorId, date }); // Debug log
+
+        // Generate time slots from 9 AM to 5 PM
+        const timeSlots = [];
+        for (let hour = 9; hour < 17; hour++) {
+            timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+            timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
+        }
+
+        // Get booked appointments
+        const [bookedAppointments] = await pool.query(
+            'SELECT appointment_time FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND status != "cancelled"',
+            [doctorId, date]
+        );
+
+        // Filter out booked slots
+        const bookedTimes = bookedAppointments.map(apt => apt.appointment_time.slice(0, 5));
+        const availableSlots = timeSlots.filter(time => !bookedTimes.includes(time));
+
+        console.log('Available slots:', availableSlots); // Debug log
+        res.json(availableSlots);
+    } catch (err) {
+        console.error('Error in available slots:', err);
+        res.status(500).json({ 
+            message: 'Error fetching available slots',
+            error: err.message 
+        });
+    }
+});
+
+router.put('/:id', async (req, res) => {
+    const { patientId, doctorId, appointmentDate, appointmentTime, reason } = req.body;
+    try {
+        // Check if new slot is available (excluding current appointment)
+        const [conflicts] = await pool.query(
+            'SELECT * FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND appointment_id != ? AND status != "cancelled"',
+            [doctorId, appointmentDate, appointmentTime, req.params.id]
+        );
+
+        if (conflicts.length > 0) {
+            return res.status(400).json({ message: 'This time slot is already booked' });
+        }
+
+        // Update appointment
+        await pool.query(
+            `UPDATE appointments 
+             SET patient_id = ?, doctor_id = ?, appointment_date = ?, 
+                 appointment_time = ?, reason = ?
+             WHERE appointment_id = ?`,
+            [patientId, doctorId, appointmentDate, appointmentTime, reason, req.params.id]
+        );
+
+        // Get updated appointment
+        const [updatedAppointment] = await pool.query(
+            `SELECT a.*, 
+                    CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                    CONCAT(d.first_name, ' ', d.last_name) as doctor_name
+             FROM appointments a
+             JOIN patients p ON a.patient_id = p.patient_id
+             JOIN doctors d ON a.doctor_id = d.doctor_id
+             WHERE a.appointment_id = ?`,
+            [req.params.id]
+        );
+
+        res.json(updatedAppointment[0]);
+    } catch (err) {
+        console.error('Error updating appointment:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

@@ -8,7 +8,6 @@ const AppointmentList = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('upcoming'); // upcoming, past, all
 
   useEffect(() => {
     fetchAppointments();
@@ -25,42 +24,16 @@ const AppointmentList = () => {
     }
   };
 
-  const handleCancelAppointment = async (appointmentId) => {
+  const handleCancel = async (appointmentId) => {
     try {
       await api.cancelAppointment(appointmentId);
-      // Refresh the appointments list
-      fetchAppointments();
+      fetchAppointments(); // Refresh the list
     } catch (err) {
       setError('Error cancelling appointment');
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'scheduled': return 'status-scheduled';
-      case 'completed': return 'status-completed';
-      case 'cancelled': return 'status-cancelled';
-      default: return '';
-    }
-  };
-
-  const filteredAppointments = appointments.filter(appointment => {
-    const appointmentDate = new Date(appointment.appointment_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
-    
-    switch (filter) {
-      case 'upcoming':
-        return appointmentDate >= today;
-      case 'past':
-        return appointmentDate < today;
-      default:
-        return true;
-    }
-  });
-
-  if (loading) return <div className="loading">Loading...</div>;
-  if (error) return <div className="error-message">{error}</div>;
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="appointment-list-container">
@@ -70,77 +43,45 @@ const AppointmentList = () => {
           className="btn primary"
           onClick={() => navigate('/appointments/new')}
         >
-          Book Appointment
+          <i className="fas fa-plus"></i> Book Appointment
         </button>
       </div>
-
-      <div className="appointment-filters">
-        <button 
-          className={`filter-btn ${filter === 'upcoming' ? 'active' : ''}`}
-          onClick={() => setFilter('upcoming')}
-        >
-          Upcoming
-        </button>
-        <button 
-          className={`filter-btn ${filter === 'past' ? 'active' : ''}`}
-          onClick={() => setFilter('past')}
-        >
-          Past
-        </button>
-        <button 
-          className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-          onClick={() => setFilter('all')}
-        >
-          All
-        </button>
-      </div>
-
+      {error && <div className="error-message">{error}</div>}
+      
       <div className="appointments-grid">
-        {filteredAppointments.map(appointment => (
+        {appointments.map(appointment => (
           <div key={appointment.appointment_id} className="appointment-card">
-            <div className={`appointment-status ${getStatusColor(appointment.status)}`}>
-              {appointment.status}
+            <div className="appointment-header">
+              <h3>Appointment Details</h3>
+              <span className={`status ${appointment.status ? appointment.status.toLowerCase() : ''}`}>
+                {appointment.status || 'N/A'}
+              </span>
             </div>
-            <div className="appointment-details">
-              <div className="detail-row">
-                <i className="fas fa-calendar"></i>
-                <span>{new Date(appointment.appointment_date).toLocaleDateString()}</span>
-              </div>
-              <div className="detail-row">
-                <i className="fas fa-clock"></i>
-                <span>{appointment.appointment_time}</span>
-              </div>
-              <div className="detail-row">
-                <i className="fas fa-user-md"></i>
-                <span>Dr. {appointment.doctor_name}</span>
-              </div>
-              <div className="detail-row">
-                <i className="fas fa-user"></i>
-                <span>{appointment.patient_name}</span>
-              </div>
-              <div className="detail-row">
-                <i className="fas fa-notes-medical"></i>
-                <span>{appointment.reason}</span>
-              </div>
+            <div className="appointment-info">
+              <p><strong>Date:</strong> {new Date(appointment.appointment_date).toLocaleDateString()}</p>
+              <p><strong>Time:</strong> {appointment.appointment_time}</p>
+              <p><strong>Doctor:</strong> {appointment.doctor_name || 'Not assigned'}</p>
+              <p><strong>Patient:</strong> {appointment.patient_name || 'Not assigned'}</p>
+              <p><strong>Reason:</strong> {appointment.reason || 'No reason provided'}</p>
             </div>
             <div className="appointment-actions">
-              {appointment.status === 'scheduled' && (
+              {(!appointment.status || appointment.status !== 'cancelled') && (
                 <>
-                  <button 
+                  <button
                     className="btn-edit"
                     onClick={() => navigate(`/appointments/${appointment.appointment_id}/edit`)}
                   >
-                    Modify
+                    <i className="fas fa-edit"></i> Modify
                   </button>
-                  <button 
+                  <button
                     className="btn-cancel"
                     onClick={() => {
                       if (window.confirm('Are you sure you want to cancel this appointment?')) {
-                        handleCancelAppointment(appointment.appointment_id);
+                        handleCancel(appointment.appointment_id);
                       }
                     }}
                   >
-                    Cancel
+                    <i className="fas fa-times"></i> Cancel
                   </button>
                 </>
               )}

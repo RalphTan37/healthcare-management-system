@@ -9,6 +9,8 @@ A web-based healthcare management system built with React, Node.js, and MySQL. T
 - Add new patients
 - View patient details
 - Search patients
+- Update Patient Information
+- Delete patients
 
 ### Doctor Management
 - View list of all doctors
@@ -94,43 +96,12 @@ CREATE TABLE appointments (
 );
 ```
 
-## Project Structure
-```
-healthcare-management-system/
-├── client/                      # Frontend React application
-│   ├── public/
-│   │   ├── index.html
-│   │   └── favicon.ico
-│   └── src/
-│       ├── components/         
-│       │   ├── Layout/
-│       │   ├── Home/
-│       │   ├── Patients/
-│       │   ├── Doctors/
-│       │   ├── Appointments/
-│       │   ├── About/
-│       │   ├── Services/
-│       │   └── Contact/
-│       ├── services/           
-│       │   └── api.js
-│       ├── styles/             
-│       ├── App.jsx
-│       └── index.js
-│
-└── server/                      # Backend Node.js server
-    ├── src/
-    │   ├── routes/
-    │   ├── db/
-    │   └── server.js
-    └── package.json
-```
-
 ## Setup Instructions
 
 ### Prerequisites
 - Node.js
 - MySQL
-- npm or yarn
+- npm
 
 ### Database Setup
 1. Create MySQL database:
@@ -183,27 +154,3 @@ npm start
 ```
 
 3. Access the application at `http://localhost:3000`
-
-## API Endpoints
-
-### Patients
-- GET `/api/patients` - Get all patients
-- POST `/api/patients` - Create new patient
-- GET `/api/patients/:id` - Get specific patient
-- PUT `/api/patients/:id` - Update patient
-- DELETE `/api/patients/:id` - Delete patient
-
-### Doctors
-- GET `/api/doctors` - Get all doctors
-- POST `/api/doctors` - Create new doctor
-- GET `/api/doctors/:id` - Get specific doctor
-- PUT `/api/doctors/:id` - Update doctor
-- DELETE `/api/doctors/:id` - Delete doctor
-
-### Appointments
-- GET `/api/appointments` - Get all appointments
-- POST `/api/appointments` - Create new appointment
-- GET `/api/appointments/:id` - Get specific appointment
-- PUT `/api/appointments/:id` - Update appointment
-- PATCH `/api/appointments/:id/cancel` - Cancel appointment
-- GET `/api/appointments/available-slots` - Get available slots

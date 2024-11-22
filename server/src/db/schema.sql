@@ -8,8 +8,8 @@ CREATE TABLE doctors (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     specialization VARCHAR(100) NOT NULL,
-    qualification VARCHAR(100),
-    experience INT
+    qualification VARCHAR(100),   
+    experience INT,               
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

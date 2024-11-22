@@ -72,15 +72,15 @@ const DoctorList = () => {
             <div className="doctor-actions">
               <button 
                 className="btn-view"
-                onClick={() => navigate(`/doctors/${doctor.doctor_id}`)}
+                onClick={() => navigate(`/doctors/schedule/${doctor.doctor_id}`)}
               >
-                View Schedule
+                <i className="fas fa-calendar"></i> View Schedule
               </button>
               <button 
                 className="btn-edit"
                 onClick={() => navigate(`/doctors/${doctor.doctor_id}/edit`)}
               >
-                Edit
+                <i className="fas fa-edit"></i> Edit
               </button>
             </div>
           </div>

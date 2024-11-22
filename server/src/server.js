@@ -19,6 +19,10 @@ app.use('/api/patients', patientsRouter);
 app.use('/api/doctors', doctorsRouter);
 app.use('/api/appointments', appointmentsRouter);
 
+// auth routes
+const authRouter = require('./routes/auth');
+app.use('/api/auth', authRouter);
+
 // Test route
 app.get('/test', (req, res) => {
   res.json({ message: 'Server is working!' });
