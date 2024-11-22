@@ -117,6 +117,7 @@ DB_USER=your_username
 DB_PASSWORD=your_password
 DB_NAME=healthcare_db
 PORT=5000
+JWT_SECRET=Your secret key
 ```
 
 ### Installation
